@@ -25,3 +25,7 @@ catkin_make
 source devel/setup.bash
 roslaunch my_sia20d test_sia20d.launch
 
+# Step 5: Launch robot with moveit config
+cd ~/assignment_ws
+source devel/setup.bash
+roslaunch assignment_moveit demo.launch

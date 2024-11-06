@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--This does not replace URDF, and is not an extension of URDF.
+    This is a format for representing semantic information about the robot structure.
+    A URDF file must exist for this robot as well, where the joints and the links that are referenced are defined
+-->
+<robot name="motoman_sia20d">
+    <!--GROUPS: Representation of a set of joints and links. This can be useful for specifying DOF to plan for, defining arms, end effectors, etc-->
+    <!--LINKS: When a link is specified, the parent joint of that link (if it exists) is automatically included-->
+    <!--JOINTS: When a joint is specified, the child link of that joint (which will always exist) is automatically included-->
+    <!--CHAINS: When a chain is specified, all the links along the chain (including endpoints) are included in the group. Additionally, all the joints that are parents to included links are also included. This means that joints along the chain and the parent joint of the base link are included in the group-->
+    <!--SUBGROUPS: Groups can also be formed by referencing to already defined group names-->
+    <group name="arm_one">
+        <chain base_link="one_base_link" tip_link="one_tool0"/>
+    </group>
+    <group name="arm_two">
+        <chain base_link="two_base_link" tip_link="two_tool0"/>
+    </group>
+    <group name="one_gripper">
+        <joint name="one_tool0_gripper"/>
+        <joint name="right_gripper_center_joint"/>
+        <joint name="right_gripper_finger_left_joint"/>
+        <joint name="right_gripper_finger_right_joint"/>
+        <joint name="right_gripper_guide_joint_finger_left"/>
+        <joint name="right_gripper_guide_joint_finger_right"/>
+    </group>
+    <group name="two_gripper">
+        <joint name="left_gripper_center_joint"/>
+        <joint name="left_gripper_finger_left_joint"/>
+        <joint name="left_gripper_finger_right_joint"/>
+        <joint name="left_gripper_guide_joint_finger_left"/>
+        <joint name="left_gripper_guide_joint_finger_right"/>
+        <joint name="two_tool0_gripper"/>
+    </group>
+    <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
+    <end_effector name="right_gripper" parent_link="one_tool0" group="one_gripper" parent_group="arm_one"/>
+    <end_effector name="left_gripper" parent_link="two_tool0" group="two_gripper" parent_group="arm_two"/>
+    <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
+    <virtual_joint name="base_world_joint" type="fixed" parent_frame="world" child_link="one_base_link"/>
+    <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
+    <disable_collisions link1="one_base_link" link2="one_link_s" reason="User"/>
+    <disable_collisions link1="one_link_l" link2="one_link_s" reason="User"/>
+    <disable_collisions link1="one_link_e" link2="one_link_l" reason="User"/>
+    <disable_collisions link1="one_link_e" link2="one_link_u" reason="User"/>
+    <disable_collisions link1="one_link_r" link2="one_link_u" reason="User"/>
+    <disable_collisions link1="one_link_b" link2="one_link_r" reason="User"/>
+    <disable_collisions link1="one_link_b" link2="one_link_t" reason="User"/>
+    <disable_collisions link1="one_link_t" link2="right_gripper_base_link" reason="User"/>
+    <disable_collisions link1="two_base_link" link2="two_link_s" reason="User"/>
+    <disable_collisions link1="two_link_l" link2="two_link_s" reason="User"/>
+    <disable_collisions link1="two_link_e" link2="two_link_l" reason="User"/>
+    <disable_collisions link1="two_link_e" link2="two_link_u" reason="User"/>
+    <disable_collisions link1="two_link_r" link2="two_link_u" reason="User"/>
+    <disable_collisions link1="two_link_b" link2="two_link_r" reason="User"/>
+    <disable_collisions link1="two_link_b" link2="two_link_t" reason="User"/>
+    <disable_collisions link1="left_gripper_base_link" link2="two_link_t" reason="User"/>
+    <disable_collisions link1="right_gripper_base_link" link2="right_gripper_gripper_left" reason="User"/>
+    <disable_collisions link1="right_gripper_finger_left" link2="right_gripper_gripper_left" reason="User"/>
+    <disable_collisions link1="right_gripper_finger_left" link2="right_gripper_gripper_right" reason="User"/>
+    <disable_collisions link1="right_gripper_finger_right" link2="two_base_link" reason="User"/>
+    <disable_collisions link1="right_gripper_finger_right" link2="right_gripper_gripper_right" reason="User"/>
+    <disable_collisions link1="left_gripper_base_link" link2="left_gripper_gripper_left" reason="User"/>
+    <disable_collisions link1="left_gripper_finger_left" link2="left_gripper_gripper_left" reason="User"/>
+    <disable_collisions link1="left_gripper_finger_left" link2="left_gripper_gripper_right" reason="User"/>
+    <disable_collisions link1="left_gripper_finger_right" link2="left_gripper_gripper_right" reason="User"/>
+</robot>

@@ -31,6 +31,10 @@
         <joint name="left_gripper_guide_joint_finger_right"/>
         <joint name="two_tool0_gripper"/>
     </group>
+    <group name="dual_arm">
+        <group name="arm_one"/>
+        <group name="arm_two"/>
+    </group>
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
     <end_effector name="right_gripper" parent_link="one_tool0" group="one_gripper" parent_group="arm_one"/>
     <end_effector name="left_gripper" parent_link="two_tool0" group="two_gripper" parent_group="arm_two"/>

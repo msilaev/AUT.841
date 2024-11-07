@@ -284,3 +284,34 @@ two_gripper:
     - AITstar
     - ABITstar
     - BITstar
+dual_arm:
+  planner_configs:
+    - AnytimePathShortening
+    - SBL
+    - EST
+    - LBKPIECE
+    - BKPIECE
+    - KPIECE
+    - RRT
+    - RRTConnect
+    - RRTstar
+    - TRRT
+    - PRM
+    - PRMstar
+    - FMT
+    - BFMT
+    - PDST
+    - STRIDE
+    - BiTRRT
+    - LBTRRT
+    - BiEST
+    - ProjEST
+    - LazyPRM
+    - LazyPRMstar
+    - SPARS
+    - SPARStwo
+    - AITstar
+    - ABITstar
+    - BITstar
+  projection_evaluator: joints(one_joint_s,one_joint_l)
+  longest_valid_segment_fraction: 0.005

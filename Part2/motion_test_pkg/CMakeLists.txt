@@ -12,6 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   message_generation
+  actionlib
+  actionlib_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -59,20 +61,21 @@ add_service_files(
   FILES
   BoxSpawner.srv
   BoxAttach.srv
-  RandomPose.srv
+  RandomPose.srv  
 )
 
 ## Generate actions in the 'action' folder
-#add_action_files(
-#  FILES
-#  Process.action
-#)
+add_action_files(
+  DIRECTORY action
+  FILES MoveRobot.action
+)
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
   std_msgs  # Or other packages containing msgs
   geometry_msgs
+  actionlib_msgs 
 )
 
 ################################################
@@ -107,7 +110,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES motion_test_pkg
- CATKIN_DEPENDS message_runtime rospy std_msgs geometry_msgs
+ CATKIN_DEPENDS message_runtime rospy std_msgs geometry_msgs actionlib_msgs
 #  DEPENDS system_lib
 )
 

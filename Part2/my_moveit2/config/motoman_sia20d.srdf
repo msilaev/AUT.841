@@ -43,10 +43,10 @@
         <joint name="left_gripper_finger_left_joint" value="-0.055"/>
     </group_state>
     <group_state name="gripper1 pinch" group="one_gripper">
-        <joint name="right_gripper_finger_left_joint" value="-0.0276"/>
+        <joint name="right_gripper_finger_left_joint" value="-0.035"/>
     </group_state>
     <group_state name="girpper2 pinch" group="two_gripper">
-        <joint name="left_gripper_finger_left_joint" value="-0.0276"/>
+        <joint name="left_gripper_finger_left_joint" value="-0.035"/>
     </group_state>
     <group_state name="arm1 home" group="arm_one">
         <joint name="one_joint_b" value="0"/>

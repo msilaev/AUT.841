@@ -1,12 +1,13 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import rospy
 import threading
 import actionlib
-#from motion_test_pkg.msg import MoveRobotAction, MoveRobotFeedback, MoveRobotResult, MoveRobotGoal
+from motion_test_pkg.msg import MoveRobotAction, MoveRobotFeedback, MoveRobotResult, MoveRobotGoal
 from geometry_msgs.msg import Point
 
 
+#!/usr/bin/env python3
 
 import rospy
 import random
@@ -44,9 +45,9 @@ import tf2_ros
 import tf2_geometry_msgs
 from geometry_msgs.msg import Pose
 from moveit_msgs.msg import PlanningScene
+from motion_test_pkg.msg import PickAndPlaceAction, PickAndPlaceFeedback, PickAndPlaceResult
+from motion_test_pkg.action import PickAndPlaceAction
 
-#from motion_test_pkg.msg import PickAndPlaceAction, PickAndPlaceFeedback, PickAndPlaceResult
-from motion_test_pkg.msg import MoveRobotAction, MoveRobotFeedback, MoveRobotResult
 
 def frame_to_pose(frame):
 
@@ -93,16 +94,13 @@ class MoveRobotServer:
             self.server.set_aborted(result)
             return
 
-        #rospy.loginfo(f"Server: Moving to position: {self.target_position}")
-        #feedback.status = f"Server: Moving to position: {self.target_position}"
+        rospy.loginfo(f"Server: Moving to position: {self.target_position}")
 
         ###########################################################
 
-        #rospy.init_node("motion_control_node")
+        rospy.init_node("motion_control_node")
 
         rospy.loginfo("Starting motion control node")
-        feedback.status = f"Starting motion control node"
-        self.server.publish_feedback(feedback)
 
         # Wait for required services
         rospy.wait_for_service('/scene_spawner/spawn_box')
@@ -136,7 +134,8 @@ class MoveRobotServer:
         transfer_z = 0.7
 
         top_x, top_y, top_z  = (0, 0, 0.7)
-   
+    
+        print("top_x, top_y, top_z", top_x, top_y, top_z )
 
         object_frame_tr = PyKDL.Frame()    
         object_frame_tr.p = PyKDL.Vector(top_x, top_y, top_z)
@@ -155,11 +154,13 @@ class MoveRobotServer:
         arm1.set_pose_target(pose_stamped_target_offset_wrist_tr)
         success, plan_arm1_1, _, _ = arm1.plan()
 
+        print("sucess", success)
+
         arm2.set_pose_target(pose_stamped_target_offset_wrist_tr)
         success, plan_arm2_1, _, _ = arm1.plan()
-
-        ###################################
    
+        print("sucess", success)
+
         success = False
 
         object_frame_top = PyKDL.Frame()   
@@ -206,9 +207,9 @@ class MoveRobotServer:
             arm1.set_pose_target(pose_stamped_target_offset_wrist_top)
             success, plan_arm1, _, _ = arm1.plan()
         
-            #print(success)
+            print(success)
 
-        #print(distance_one, distance_two)        
+        print(distance_one, distance_two)        
     
         if top_x is not None:    
 
@@ -250,10 +251,7 @@ class MoveRobotServer:
             spawn_box_service(base_box_request)
             rospy.loginfo("Spawned base box")
     
-        feedback.status = f"Created box objects"
-        self.server.publish_feedback(feedback)
-
-    ###################################
+    #########################################
     
         # Open gripper
         rospy.loginfo("Opening gripper")
@@ -277,10 +275,7 @@ class MoveRobotServer:
         gripper1.set_named_target('gripper1 pinch')
         gripper1.go(wait=True)
 
-        feedback.status = f"Picked top box"
-        self.server.publish_feedback(feedback)
-
-
+    #####################33
     ###################################
 
         transfer_x = 0
@@ -310,7 +305,7 @@ class MoveRobotServer:
         success, plan_arm1_1, _, _ = arm1.plan()
         arm1.execute(plan_arm1_1, wait=True)
 
-        ###################################
+        ######################
     
         gripper1.set_named_target('gripper1 open')
         gripper1.go(wait=True)
@@ -359,11 +354,11 @@ class MoveRobotServer:
         success, plan_arm2_3, _, _ = arm2.plan()
         arm2.execute(plan_arm2_3, wait=True)
 
-        #rospy.loginfo("Motion control complete")
+        rospy.loginfo("Motion control complete")
 
-        ###################################            
+        ###########################################################            
             
-        feedback.status = f"Server: Target reached!"
+        feedback.status = f"Distance remaining: {distance_remaining:.2f} meters"
         self.server.publish_feedback(feedback)
         rospy.sleep(0.1)
 
@@ -374,6 +369,9 @@ class MoveRobotServer:
     
     def calculate_distance(self, target_position):
         return ((target_position.x)**2 + (target_position.y)**2 + (target_position.z)**2)**0.5
+
+
+
 
 class MoveRobotClient:
 
@@ -405,5 +403,5 @@ class MoveRobotClient:
 if __name__ == '__main__':
     rospy.init_node('motion_control')
     server = MoveRobotServer()
-    #client = MoveRobotClient()
+    client = MoveRobotClient()
     rospy.spin()

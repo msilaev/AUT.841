@@ -117,47 +117,20 @@ class MoveRobotServer:
         #robot = moveit_commander.RobotCommander()
         #scene = moveit_commander.PlanningSceneInterface()
 
-        arm1 = moveit_commander.MoveGroupCommander("arm_one")
-        gripper1 = moveit_commander.MoveGroupCommander("one_gripper")
+        arm1_0 = moveit_commander.MoveGroupCommander("arm_one")
+        gripper1_0 = moveit_commander.MoveGroupCommander("one_gripper")
 
-        arm2 = moveit_commander.MoveGroupCommander("arm_two")
-        gripper2 = moveit_commander.MoveGroupCommander("two_gripper")
+        arm2_0 = moveit_commander.MoveGroupCommander("arm_two")
+        gripper2_0 = moveit_commander.MoveGroupCommander("two_gripper")
 
-        arm1.clear_pose_targets()
-        gripper1.clear_pose_targets()
+        arm1_0.clear_pose_targets()
+        gripper1_0.clear_pose_targets()
 
-        arm2.clear_pose_targets()
-        gripper2.clear_pose_targets()
+        arm2_0.clear_pose_targets()
+        gripper2_0.clear_pose_targets()
           
         ###################################
-
-        transfer_x = 0
-        transfer_y = 0
-        transfer_z = 0.7
-
-        top_x, top_y, top_z  = (0, 0, 0.7)
-   
-
-        object_frame_tr = PyKDL.Frame()    
-        object_frame_tr.p = PyKDL.Vector(top_x, top_y, top_z)
-        gripper_length = 0.24
-    
-        goal_frame_tr = copy.deepcopy(object_frame_tr)
-        goal_frame_tr.p[2] += gripper_length
-        goal_frame_tr.M.DoRotX(3.14)  # Gripper pointing down
-    
-        goal_pose_tr = frame_to_pose(goal_frame_tr)
-        pose_stamped_target_wrist_tr = geometry_msgs.msg.PoseStamped()
-        pose_stamped_target_wrist_tr.header.frame_id = "world"  # Adjust if needed
-        pose_stamped_target_wrist_tr.pose = goal_pose_tr
-        pose_stamped_target_offset_wrist_tr = copy.deepcopy(pose_stamped_target_wrist_tr)
-
-        arm1.set_pose_target(pose_stamped_target_offset_wrist_tr)
-        success, plan_arm1_1, _, _ = arm1.plan()
-
-        arm2.set_pose_target(pose_stamped_target_offset_wrist_tr)
-        success, plan_arm2_1, _, _ = arm1.plan()
-
+        ### generating boxes     
         ###################################
    
         success = False
@@ -181,14 +154,31 @@ class MoveRobotServer:
 
         #################################
         
-            distance_one = (trans_one[0]-top_x) **2 + (trans_one[1]-top_y)**2   # (x, y, z)
-            distance_two = (trans_two[0]-top_x) **2 + (trans_two[1]-top_y)**2   # (x, y, z)
+            distance_top_one = (trans_one[0]-top_x) **2 + (trans_one[1]-top_y)**2   # (x, y, z)
+            distance_top_two = (trans_two[0]-top_x) **2 + (trans_two[1]-top_y)**2   # (x, y, z)
+
+            if distance_top_one < distance_top_two :
+                arm1 = copy.copy(arm1_0)
+                gripper1 = copy.copy(gripper1_0)
+                gripper1_open = 'gripper1 open'
+                gripper1_close = 'gripper1 pinch'
+                robot1_box = "robot1"
+                arm1_home = 'arm1 home'
+                arm1_name ="arm1"
+                flag_top = 1     
+
+            else:
+                arm1 = copy.copy(arm2_0)
+                gripper1 = copy.copy(gripper2_0)
+                gripper1_open = 'girpper2 open'
+                gripper1_close = 'girpper2 pinch'
+                robot1_box = "robot2"
+                arm1_home = 'arm2 home'
+                arm1_name ="arm2"
+                flag_top = 2     
 
         ##################################
-
-            print("top_x, top_y, top_z", top_x, top_y, top_z )
-
-            #object_frame_top = PyKDL.Frame()    
+            
             object_frame_top.p = PyKDL.Vector(top_x, top_y, top_z)
             gripper_length = 0.24
     
@@ -202,19 +192,15 @@ class MoveRobotServer:
             pose_stamped_target_wrist_top.pose = goal_pose_top
             pose_stamped_target_offset_wrist_top = copy.deepcopy(pose_stamped_target_wrist_top)
 
-            # group.set_pose_target(target_pose)
             arm1.set_pose_target(pose_stamped_target_offset_wrist_top)
             success, plan_arm1, _, _ = arm1.plan()
-        
-            #print(success)
-
-        #print(distance_one, distance_two)        
+                
     
         if top_x is not None:    
 
             top_box_request = BoxSpawnerRequest(name="top_box", x=top_x, y=top_y, base=False)
             spawn_box_service(top_box_request)
-            rospy.loginfo("Spawned top box")
+            #rospy.loginfo("Spawned top box")
     
         #pose_stamped_target_offset_wrist.pose.position.z += 0.1
 
@@ -224,12 +210,41 @@ class MoveRobotServer:
         
         while not success:
 
-            base_x, base_y, base_z = get_random_pose()        
+            base_x, base_y, base_z = get_random_pose()  
+
+            if abs(base_x - top_x) < 0.15 and abs(base_y - top_y) < 0.15:
+                continue
+                    
          
+            #################################
+        
+            distance_base_one = (trans_one[0]-base_x) **2 + (trans_one[1]-base_y)**2   # (x, y, z)
+            distance_base_two = (trans_two[0]-base_x) **2 + (trans_two[1]-base_y)**2   # (x, y, z)
+
+            if distance_base_one < distance_base_two :
+                arm2 = copy.copy(arm1_0)
+                gripper2 = copy.copy(gripper1_0)
+                gripper2_open = 'gripper1 open'
+                gripper2_close = 'gripper1 pinch'
+                robot2_box = "robot1"
+                arm2_home = 'arm1 home'
+                arm2_name ="arm1"
+                flag_base = 1     
+
+            else:
+                arm2 = copy.copy(arm2_0)
+                gripper2 = copy.copy(gripper2_0)
+                gripper2_open = 'girpper2 open'
+                gripper2_close = 'girpper2 pinch'
+                robot2_box = "robot2"
+                arm2_home = 'arm2 home'
+                arm2_name ="arm2"
+                flag_base = 2
+            
             object_frame_base.p = PyKDL.Vector(base_x, base_y, base_z)
             gripper_length = 0.24
     
-            goal_frame_base = copy.deepcopy(object_frame_base)
+            goal_frame_base = copy.copy(object_frame_base)
             goal_frame_base.p[2] += gripper_length + 0.055
             goal_frame_base.M.DoRotX(3.14)  # Gripper pointing down
     
@@ -239,107 +254,103 @@ class MoveRobotServer:
             pose_stamped_target_wrist_base.pose = goal_pose_base
             pose_stamped_target_offset_wrist_base = copy.deepcopy(pose_stamped_target_wrist_base)
 
-            # group.set_pose_target(target_pose)
             arm2.set_pose_target(pose_stamped_target_offset_wrist_base)
             success, plan_arm2, _, _ = arm2.plan()
 
-            print(success)
-
         if base_x is not None:
+
             base_box_request = BoxSpawnerRequest(name="base_box", x=base_x, y=base_y, base=True)
             spawn_box_service(base_box_request)
             rospy.loginfo("Spawned base box")
-    
-        feedback.status = f"Created box objects"
+                  
+        feedback.status = f"Created box objects, top box will be picked by {arm1_name} and put on base by {arm2_name}"
         self.server.publish_feedback(feedback)
+      
+        #feedback.status = f"Top box will be picked by {arm1_name} and put on base by {arm2_name}"  
+        #self.server.publish_feedback(feedback)
 
     ###################################
     
         # Open gripper
-        rospy.loginfo("Opening gripper")
-        gripper1.set_named_target('gripper1 open')
+        #rospy.loginfo("Opening gripper")
+        gripper1.set_named_target(gripper1_open)
         gripper1.go(wait=True)
     
         # Move to target pose
-        rospy.loginfo("Moving to target pose")
-        #arm1.set_pose_target(pose_stamped_target_offset_wrist_base)
+        #rospy.loginfo("Moving to target pose")
         arm1.execute(plan_arm1, wait=True)
-
-        #   arm1.go(wait=True)
     
         # Attach the top box
-        rospy.loginfo("Attaching top box")
-        box_attach_request_1 = BoxAttachRequest(robot_name="robot1", box_name="top_box", attach=True)
+        #rospy.loginfo("Attaching top box")
+        box_attach_request_1 = BoxAttachRequest(robot_name = robot1_box, box_name = "top_box", attach=True)
         attach_box_service(box_attach_request_1)
 
         # Close gripper
-        rospy.loginfo("Closing gripper")
-        gripper1.set_named_target('gripper1 pinch')
+        #rospy.loginfo("Closing gripper")
+        gripper1.set_named_target(gripper1_close)
         gripper1.go(wait=True)
 
-        feedback.status = f"Picked top box"
+        feedback.status = f"{arm1_name} picked top box"
         self.server.publish_feedback(feedback)
-
 
     ###################################
 
-        transfer_x = 0
-        transfer_y = 0
-        transfer_z = 0.7
+        if flag_top != flag_base:
+            
+            transfer_x, transfer_y, transfer_z  = (0, 0, 0.7)   
 
-        top_x, top_y, top_z  = (0, 0, 0.7)
+            object_frame_tr = PyKDL.Frame()    
+            object_frame_tr.p = PyKDL.Vector(transfer_x, transfer_y, transfer_z)
+            gripper_length = 0.24
     
-        print("top_x, top_y, top_z", top_x, top_y, top_z )
+            goal_frame_tr = copy.deepcopy(object_frame_tr)
+            goal_frame_tr.p[2] += gripper_length
+            goal_frame_tr.M.DoRotX(3.14)  # Gripper pointing down
+    
+            goal_pose_tr = frame_to_pose(goal_frame_tr)
+            pose_stamped_target_wrist_tr = geometry_msgs.msg.PoseStamped()
+            pose_stamped_target_wrist_tr.header.frame_id = "world"  # Adjust if needed
+            pose_stamped_target_wrist_tr.pose = goal_pose_tr
+            pose_stamped_target_offset_wrist_tr = copy.deepcopy(pose_stamped_target_wrist_tr)
 
-        object_frame_tr = PyKDL.Frame()    
-        object_frame_tr.p = PyKDL.Vector(top_x, top_y, top_z)
-        gripper_length = 0.24
-    
-        goal_frame_tr = copy.deepcopy(object_frame_tr)
-        goal_frame_tr.p[2] += gripper_length
-        goal_frame_tr.M.DoRotX(3.14)  # Gripper pointing down
-    
-        goal_pose_tr = frame_to_pose(goal_frame_tr)
-        pose_stamped_target_wrist_tr = geometry_msgs.msg.PoseStamped()
-        pose_stamped_target_wrist_tr.header.frame_id = "world"  # Adjust if needed
-        pose_stamped_target_wrist_tr.pose = goal_pose_tr
-        pose_stamped_target_offset_wrist_tr = copy.deepcopy(pose_stamped_target_wrist_tr)
+            arm1.set_pose_target(pose_stamped_target_offset_wrist_tr)
+            success, plan_arm1_1, _, _ = arm1.plan()
+            arm1.execute(plan_arm1_1, wait=True)
 
-        # group.set_pose_target(target_pose)
-        arm1.set_pose_target(pose_stamped_target_offset_wrist_tr)
-        success, plan_arm1_1, _, _ = arm1.plan()
-        arm1.execute(plan_arm1_1, wait=True)
-
-        ###################################
+            ###################################
     
-        gripper1.set_named_target('gripper1 open')
-        gripper1.go(wait=True)
+            gripper1.set_named_target(gripper1_open)
+            gripper1.go(wait=True)
        
-        box_attach_request_1_2 = BoxAttachRequest(robot_name="robot1", box_name="top_box", attach=False)
-        attach_box_service(box_attach_request_1_2)
+            box_attach_request_1_2 = BoxAttachRequest(robot_name=robot1_box, box_name="top_box", attach=False)
+            attach_box_service(box_attach_request_1_2)
 
-        # Move to home position
-        rospy.loginfo("arm1 moving to home position")
-        arm1.set_named_target('arm1 home')
+            feedback.status = f"Top box in transfer position"
+            self.server.publish_feedback(feedback)
+
+            arm1.set_named_target(arm1_home)
     
-        success, plan_arm1, _, _ = arm1.plan()
-        arm1.execute(plan_arm1, wait=True)
+            success, plan_arm1, _, _ = arm1.plan()
+            arm1.execute(plan_arm1, wait=True)
 
-        gripper2.set_named_target('girpper2 open')
-        gripper2.go(wait=True)
+            feedback.status = f"{arm1_name} in home position"
+            self.server.publish_feedback(feedback)
 
-        arm2.set_pose_target(pose_stamped_target_offset_wrist_tr)
-        success, plan_arm2_1, _, _ = arm2.plan()
-        arm2.execute(plan_arm2_1, wait=True)
+            gripper2.set_named_target(gripper2_open)
+            gripper2.go(wait=True)
+
+            arm2.set_pose_target(pose_stamped_target_offset_wrist_tr)
+            success, plan_arm2_1, _, _ = arm2.plan()
+            arm2.execute(plan_arm2_1, wait=True)
    
-        box_attach_request_2_1 = BoxAttachRequest(robot_name="robot2", box_name="top_box", attach=True)
-        attach_box_service(box_attach_request_2_1)
+            box_attach_request_2_1 = BoxAttachRequest(robot_name=robot2_box, box_name="top_box", attach=True)
+            attach_box_service(box_attach_request_2_1)
 
-        gripper2.set_named_target('girpper2 pinch')
-        gripper2.go(wait=True)
+            gripper2.set_named_target(gripper2_close)
+            gripper2.go(wait=True)       
 
-        #pose_stamped_target_offset_wrist_base = copy.deepcopy(pose_stamped_target_wrist_base)
-        # group.set_pose_target(target_pose)
+            feedback.status = f"{arm2_name} picked top box"
+            self.server.publish_feedback(feedback)
 
         arm2.clear_pose_targets()
 
@@ -347,28 +358,36 @@ class MoveRobotServer:
         success, plan_arm2, _, _ = arm2.plan()
         arm2.execute(plan_arm2, wait=True)
 
-        gripper2.set_named_target('girpper2 open')
+        gripper2.set_named_target(gripper2_open)
         gripper2.go(wait=True)
 
-        box_attach_request_2_2 = BoxAttachRequest(robot_name="robot2", box_name="top_box", attach=False)
+        box_attach_request_2_2 = BoxAttachRequest(robot_name=robot2_box, box_name="top_box", attach=False)
         attach_box_service(box_attach_request_2_2)
 
+        feedback.status = f"Top box transferred to base box by {arm2_name}"
+        self.server.publish_feedback(feedback)
+
          # Move to home position
-        rospy.loginfo("arm2 moving to home position")
-        arm2.set_named_target('arm2 home')
+        #rospy.loginfo("arm2 moving to home position")
+        arm2.set_named_target(arm2_home)
         success, plan_arm2_3, _, _ = arm2.plan()
         arm2.execute(plan_arm2_3, wait=True)
+
+        feedback.status = f"{arm2_name} in home position"
+        self.server.publish_feedback(feedback)
 
         #rospy.loginfo("Motion control complete")
 
         ###################################            
             
-        feedback.status = f"Server: Target reached!"
-        self.server.publish_feedback(feedback)
-        rospy.sleep(0.1)
+        #feedback.status = f"Server: Target reached!"
+        #self.server.publish_feedback(feedback)
+        #rospy.sleep(0.1)
 
-        rospy.loginfo('Server: Target reached!')
+        #rospy.loginfo('Server: Target reached!')
+        
         result.success = True
+        result.message = "The motion was successfully completed."
         self.server.set_succeeded(result)
 
     

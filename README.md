@@ -87,6 +87,9 @@ goal:
 
 ''' rostopic echo /process_action/feedback '''
 
+''' rostopic echo /process_action/result '''
+
+
 
 ### Step 5
 

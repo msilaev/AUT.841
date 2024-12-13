@@ -53,23 +53,51 @@ roslaunch my_moveit2 demo.launch
 
 ### Step 1, 2 same as above
 
+### Step 1: Create Workspace
+mkdir assignment_ws
+
+cd assignment_ws
+
+### Step 2: Download Motoman
+
+git clone -b kinetic-devel https://github.com/ros-industrial/motoman.git src/motoman
+
+rosdep update
+
+rosdep install --from-paths src/ --ignore-src --rosdistro noetic
+
+catkin_make
+
+source devel/setup.bash
+
+roslaunch motoman_sia20d_moveit_config demo.launch
+
+### Step 3: Create Project Packages
+
+cd src
+
+catkin_create_pkg my_sia20d urdf
+
+catkin_create_pkg wsg50_gripper urdf
+
 ### Step 3 
 
-Copy files from Part2, together with CMakeText and package.xmp files in folder to ''src/''
+Copy files from Part2, together with CMakeText and package.xmp files in folder to 
+src/
 
-'''chmod +x src/motion_test_pkg/src/*.py'''
+chmod +x src/motion_test_pkg/src/*.py
 
-'''catkin_make'''
+catkin_make
 
-'''source devel/setup.bash'''
+source devel/setup.bash
 
 ### Step 4
 
 Open several terminals and source workspace. Then implement following commands in separate terminal each
 
-'''roslaunch motion_test_pkg combined_action.launch'''
+roslaunch motion_test_pkg combined_action.launch
 
-'''rostopic pub /process_action/goal motion_test_pkg/MoveRobotActionGoal "header:
+rostopic pub /process_action/goal motion_test_pkg/MoveRobotActionGoal "header:
   seq: 0
   stamp:
     secs: 0
@@ -83,11 +111,11 @@ goal_id:
 goal:
   command: 'start'
 "
-'''
 
-''' rostopic echo /process_action/feedback '''
 
-''' rostopic echo /process_action/result '''
+rostopic echo /process_action/feedback
+
+rostopic echo /process_action/result
 
 
 

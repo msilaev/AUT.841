@@ -48,41 +48,43 @@ from moveit_msgs.msg import PlanningScene
 #from motion_test_pkg.msg import PickAndPlaceAction, PickAndPlaceFeedback, PickAndPlaceResult
 from motion_test_pkg.msg import MoveRobotAction, MoveRobotFeedback, MoveRobotResult
 
-def frame_to_pose(frame):
 
-	pose_result = Pose()
-	pose_result.position.x = frame.p[0] 
-	pose_result.position.y = frame.p[1] 
-	pose_result.position.z = frame.p[2] 
-	ang = frame.M.GetQuaternion() 
-	pose_result.orientation.x = ang[0] 
-	pose_result.orientation.y = ang[1] 
-	pose_result.orientation.z = ang[2] 
-	pose_result.orientation.w = ang[3]
-	return pose_result
-
-
-def get_random_pose():
-    """Call the random pose generator service and get random coordinates."""
-    rospy.wait_for_service('/random_pose_generator')
-    try:
-        random_pose_service = rospy.ServiceProxy('/random_pose_generator', RandomPose)
-        response = random_pose_service()
-        return response.x, response.y, response.z
-    except rospy.ServiceException as e:
-        rospy.logerr(f"Service call failed: {e}")
-        return None, None, None
 
 
 class MoveRobotServer:
+    """
+    MoveRobotServer is a ROS action server that handles the motion planning and execution
+    for a robotic arm. It receives goals for moving the robot to specified poses and
+    provides feedback and results on the execution status.
+
+    Attributes:
+        action_name (str): The name of the action server.
+        server (SimpleActionServer): The action server instance.
+        arm (MoveGroupCommander): The MoveIt commander for the robotic arm.
+        gripper (MoveGroupCommander): The MoveIt commander for the gripper.
+    """
 
     def __init__(self):
+        """
+        Initializes the MoveRobotServer with the given action name.
+
+        Args:
+            name (str): The name of the action server.
+        """
 
         self.server = actionlib.SimpleActionServer('/process_action', MoveRobotAction, self.execute, False)
         self.target_position = Point(5.0, 5.0, 0.0)  # Define target coordinates here
         self.server.start()
 
     def execute(self, goal):
+        """
+        Callback function that is called when a new goal is received by the action server.
+        This function handles the motion planning and execution to move the robot to the
+        specified goal pose.
+
+        Args:
+            goal (MoveRobotGoal): The goal containing the target pose for the robot.
+        """
 
         feedback = MoveRobotFeedback()
         result = MoveRobotResult()
@@ -92,15 +94,9 @@ class MoveRobotServer:
             result.success = False
             self.server.set_aborted(result)
             return
-
-        #rospy.loginfo(f"Server: Moving to position: {self.target_position}")
-        #feedback.status = f"Server: Moving to position: {self.target_position}"
-
+        
         ###########################################################
-
-        #rospy.init_node("motion_control_node")
-
-        rospy.loginfo("Starting motion control node")
+        #rospy.loginfo("Starting motion control node")
         feedback.status = f"Starting motion control node"
         self.server.publish_feedback(feedback)
 
@@ -128,6 +124,13 @@ class MoveRobotServer:
 
         arm2_0.clear_pose_targets()
         gripper2_0.clear_pose_targets()
+
+
+        world_frame = "world"
+        base_link_frame = "one_base_link"
+        trans_one = self.get_robot_coordinates(world_frame, base_link_frame)
+        base_link_frame = "two_base_link"
+        trans_two = self.get_robot_coordinates(world_frame, base_link_frame)
           
         ###################################
         ### generating boxes     
@@ -136,26 +139,13 @@ class MoveRobotServer:
         success = False
 
         object_frame_top = PyKDL.Frame()   
-
-        world_frame = "world"
-        base_link_frame = "one_base_link"
-        tf_listener = tf.TransformListener()
-        tf_listener.waitForTransform(world_frame, base_link_frame, rospy.Time(0), rospy.Duration(3.0))
-        (trans_one, rot) = tf_listener.lookupTransform(world_frame, base_link_frame, rospy.Time(0))
-
-        base_link_frame = "two_base_link"
-        tf_listener = tf.TransformListener()
-        tf_listener.waitForTransform(world_frame, base_link_frame, rospy.Time(0), rospy.Duration(3.0))
-        (trans_two, rot) = tf_listener.lookupTransform(world_frame, base_link_frame, rospy.Time(0))
-
+       
         while not success:
 
-            top_x, top_y, top_z = get_random_pose()  
-
-        #################################
-        
-            distance_top_one = (trans_one[0]-top_x) **2 + (trans_one[1]-top_y)**2   # (x, y, z)
-            distance_top_two = (trans_two[0]-top_x) **2 + (trans_two[1]-top_y)**2   # (x, y, z)
+            top_x, top_y, top_z = self.get_random_pose()  
+                   
+            distance_top_one = self.calculate_distance(trans_one, (top_x, top_y, top_z))
+            distance_top_two = self.calculate_distance(trans_two, (top_x, top_y, top_z))
 
             if distance_top_one < distance_top_two :
                 arm1 = copy.copy(arm1_0)
@@ -186,23 +176,20 @@ class MoveRobotServer:
             goal_frame_top.p[2] += gripper_length 
             goal_frame_top.M.DoRotX(3.14)  # Gripper pointing down
     
-            goal_pose_top = frame_to_pose(goal_frame_top)
+            goal_pose_top = self.frame_to_pose(goal_frame_top)
             pose_stamped_target_wrist_top = geometry_msgs.msg.PoseStamped()
             pose_stamped_target_wrist_top.header.frame_id = "world"  # Adjust if needed
             pose_stamped_target_wrist_top.pose = goal_pose_top
             pose_stamped_target_offset_wrist_top = copy.deepcopy(pose_stamped_target_wrist_top)
 
             arm1.set_pose_target(pose_stamped_target_offset_wrist_top)
-            success, plan_arm1, _, _ = arm1.plan()
-                
+            success, plan_arm1, _, _ = arm1.plan()                
     
         if top_x is not None:    
 
             top_box_request = BoxSpawnerRequest(name="top_box", x=top_x, y=top_y, base=False)
             spawn_box_service(top_box_request)
-            #rospy.loginfo("Spawned top box")
-    
-        #pose_stamped_target_offset_wrist.pose.position.z += 0.1
+            #rospy.loginfo("Spawned top box")   
 
         success = False
 
@@ -210,13 +197,10 @@ class MoveRobotServer:
         
         while not success:
 
-            base_x, base_y, base_z = get_random_pose()  
+            base_x, base_y, base_z = self.get_random_pose()  
 
             if abs(base_x - top_x) < 0.15 and abs(base_y - top_y) < 0.15:
-                continue
-                    
-         
-            #################################
+                continue                            
         
             distance_base_one = (trans_one[0]-base_x) **2 + (trans_one[1]-base_y)**2   # (x, y, z)
             distance_base_two = (trans_two[0]-base_x) **2 + (trans_two[1]-base_y)**2   # (x, y, z)
@@ -248,7 +232,7 @@ class MoveRobotServer:
             goal_frame_base.p[2] += gripper_length + 0.055
             goal_frame_base.M.DoRotX(3.14)  # Gripper pointing down
     
-            goal_pose_base = frame_to_pose(goal_frame_base)
+            goal_pose_base = self.frame_to_pose(goal_frame_base)
             pose_stamped_target_wrist_base = geometry_msgs.msg.PoseStamped()
             pose_stamped_target_wrist_base.header.frame_id = "world"  # Adjust if needed
             pose_stamped_target_wrist_base.pose = goal_pose_base
@@ -265,10 +249,7 @@ class MoveRobotServer:
                   
         feedback.status = f"Created box objects, top box will be picked by {arm1_name} and put on base by {arm2_name}"
         self.server.publish_feedback(feedback)
-      
-        #feedback.status = f"Top box will be picked by {arm1_name} and put on base by {arm2_name}"  
-        #self.server.publish_feedback(feedback)
-
+             
     ###################################
     
         # Open gripper
@@ -307,7 +288,7 @@ class MoveRobotServer:
             goal_frame_tr.p[2] += gripper_length
             goal_frame_tr.M.DoRotX(3.14)  # Gripper pointing down
     
-            goal_pose_tr = frame_to_pose(goal_frame_tr)
+            goal_pose_tr = self.frame_to_pose(goal_frame_tr)
             pose_stamped_target_wrist_tr = geometry_msgs.msg.PoseStamped()
             pose_stamped_target_wrist_tr.header.frame_id = "world"  # Adjust if needed
             pose_stamped_target_wrist_tr.pose = goal_pose_tr
@@ -378,51 +359,57 @@ class MoveRobotServer:
 
         #rospy.loginfo("Motion control complete")
 
-        ###################################            
-            
-        #feedback.status = f"Server: Target reached!"
-        #self.server.publish_feedback(feedback)
-        #rospy.sleep(0.1)
-
+        ###################################           
+       
         #rospy.loginfo('Server: Target reached!')
         
         result.success = True
         result.message = "The motion was successfully completed."
         self.server.set_succeeded(result)
 
+    @staticmethod
+    def get_robot_coordinates(world_frame = "world", base_link_frame = "one_base_link"): 
+
+        tf_listener = tf.TransformListener()
+        tf_listener.waitForTransform(world_frame, base_link_frame, rospy.Time(0), rospy.Duration(3.0))
+        (trans, rot) = tf_listener.lookupTransform(world_frame, base_link_frame, rospy.Time(0))
+
+        return trans
     
-    def calculate_distance(self, target_position):
-        return ((target_position.x)**2 + (target_position.y)**2 + (target_position.z)**2)**0.5
+    @staticmethod     
+    def calculate_distance(trans_one, top):
 
-class MoveRobotClient:
+        distance_top_one = (trans_one[0]-top[0]) **2 + (trans_one[1]-top[1])**2   # (x, y, z)
+        
+        return distance_top_one   
+    
+    @staticmethod
+    def frame_to_pose(frame):
+        pose_result = Pose()
+        pose_result.position.x = frame.p[0]
+        pose_result.position.y = frame.p[1]
+        pose_result.position.z = frame.p[2]
+        ang = frame.M.GetQuaternion()
+        pose_result.orientation.x = ang[0]
+        pose_result.orientation.y = ang[1]
+        pose_result.orientation.z = ang[2]
+        pose_result.orientation.w = ang[3]
+        return pose_result
 
-    def __init__(self):
-        self.client_thread = threading.Thread(target=self.run_client)
-        self.client_thread.start()
-
-    def run_client(self):
-        rospy.sleep(1)  # Wait for server to start
-        client = actionlib.SimpleActionClient('/process_action', MoveRobotAction)
-        rospy.loginfo('Client: Waiting for server...')
-        client.wait_for_server()
-
-        goal = MoveRobotGoal()
-        goal.command = "start"  # Command sent to the server
-
-        rospy.loginfo('Client: Sending goal...')
-        client.send_goal(goal, feedback_cb=self.feedback_callback)
-
-        client.wait_for_result()
-        result = client.get_result()
-        rospy.loginfo(f'Client: Result - Success = {result.success}')
-
-    def feedback_callback(self, feedback):
-        rospy.loginfo(f'Client: Feedback - {feedback.status}')
-
+    @staticmethod
+    def get_random_pose():
+        """Call the random pose generator service and get random coordinates."""
+        rospy.wait_for_service('/random_pose_generator')
+        try:
+            random_pose_service = rospy.ServiceProxy('/random_pose_generator', RandomPose)
+            response = random_pose_service()
+            return response.x, response.y, response.z
+        except rospy.ServiceException as e:
+            rospy.logerr(f"Service call failed: {e}")
+            return None, None, None
 
 
 if __name__ == '__main__':
     rospy.init_node('motion_control')
     server = MoveRobotServer()
-    #client = MoveRobotClient()
     rospy.spin()

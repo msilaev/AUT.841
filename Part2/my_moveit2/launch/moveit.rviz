@@ -41,7 +41,7 @@ Visualization Manager:
       Planned Path:
         Links: ~
         Loop Animation: false
-        Robot Alpha: 0.5
+        Robot Alpha: 1
         Show Robot Collision: false
         Show Robot Visual: false
         Show Trail: false
@@ -74,7 +74,7 @@ Visualization Manager:
       Scene Robot:
         Attached Body Color: 150; 50; 150
         Links: ~
-        Robot Alpha: 0.5
+        Robot Alpha: 1
         Show Scene Robot: true
       Value: true
   Enabled: true
